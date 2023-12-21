@@ -14,8 +14,9 @@ class App extends StatelessWidget {
       theme: ThemeData(
           primaryColor: Colors.black,
           scaffoldBackgroundColor: Color(0xFFF5F5F3),
-          appBarTheme: AppBarTheme(backgroundColor: Colors.red, elevation: 0)),
-      title: 'Flutter + PHP CRUD',
+          appBarTheme:
+              AppBarTheme(backgroundColor: Colors.teal.shade500, elevation: 0)),
+      title: 'Inventaris RT',
       initialRoute: '/',
       routes: {
         '/': (context) => Home(),

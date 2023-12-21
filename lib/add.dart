@@ -53,7 +53,7 @@ class _AddState extends State<Add> {
     }
   }
 
-  List<int>? _imageBytes; // Tambahkan variabel ini di luar build method
+  List<int>? _imageBytes;
 
   //inisialize field
   var namaBarang = TextEditingController();
@@ -94,12 +94,42 @@ class _AddState extends State<Add> {
     }
   }
 
+  // Fungsi untuk menampilkan modal bottom sheet
+  Future<void> _showSelectionDialog(BuildContext context) async {
+    await showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 150,
+          child: Column(
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Pilih dari Galeri'),
+                onTap: () {
+                  _pilihGallery();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text('Pilih dari Kamera'),
+                onTap: () {
+                  _pilihKamera();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text("Create New Note"),
+        title: Text("Tambah Barang Baru"),
       ),
       body: Form(
         key: _formKey,
@@ -177,7 +207,7 @@ class _AddState extends State<Add> {
               Center(
                 child: InkWell(
                   onTap: () {
-                    _pilihKamera();
+                    _showSelectionDialog(context);
                   },
                   child: Container(
                     padding: EdgeInsets.all(8),

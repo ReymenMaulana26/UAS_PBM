@@ -1,9 +1,13 @@
 // ignore_for_file: unused_field, prefer_const_constructors, avoid_print, use_key_in_widget_constructors, must_be_immutable, unused_element, unused_local_variable, avoid_unnecessary_containers
 
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 
 class Edit extends StatefulWidget {
   Edit({required this.id});
@@ -17,10 +21,76 @@ class Edit extends StatefulWidget {
 class _EditState extends State<Edit> {
   final _formKey = GlobalKey<FormState>();
 
+  File? _imageFile;
+
+  // Metode _pilihGallery untuk memilih gambar dari gallery
+  _pilihGallery() async {
+    var image = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+      maxHeight: 1920.0,
+      maxWidth: 100.0,
+    );
+    if (image != null) {
+      List<int> imageBytes = await image.readAsBytes();
+      setState(() {
+        _imageFile = File(image.path);
+        _imageBytes = imageBytes;
+      });
+    }
+  }
+
+// Metode _pilihKamera untuk memilih gambar dari kamera
+  _pilihKamera() async {
+    var image = await ImagePicker().pickImage(
+      source: ImageSource.camera,
+      maxHeight: 1920.0,
+      maxWidth: 100.0,
+    );
+    if (image != null) {
+      List<int> imageBytes = await image.readAsBytes();
+      setState(() {
+        _imageFile = File(image.path);
+        _imageBytes = imageBytes;
+      });
+    }
+  }
+
+  List<int>? _imageBytes; // Tambahkan variabel ini di luar build method
+
   //inisialize field
   var namaBarang = TextEditingController();
   var jumlahBarang = TextEditingController();
   var keterangan = TextEditingController();
+
+  // Fungsi untuk menampilkan modal bottom sheet
+  Future<void> _showSelectionDialog(BuildContext context) async {
+    await showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return Container(
+          height: 150,
+          child: Column(
+            children: <Widget>[
+              ListTile(
+                leading: Icon(Icons.photo_library),
+                title: Text('Pilih dari Galeri'),
+                onTap: () {
+                  _pilihGallery();
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.camera_alt),
+                title: Text('Pilih dari Kamera'),
+                onTap: () {
+                  _pilihKamera();
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 
   @override
   void initState() {
@@ -55,6 +125,9 @@ class _EditState extends State<Edit> {
 
   Future _onUpdate(context) async {
     try {
+      Uint8List imageBytes = await _imageFile!.readAsBytes();
+      String base64Image = base64Encode(imageBytes);
+
       return await http.post(
         Uri.parse("http://192.168.1.4/uas_pbm/api/update.php"),
         body: {
@@ -62,6 +135,7 @@ class _EditState extends State<Edit> {
           "namaBarang": namaBarang.text,
           "jumlahBarang": jumlahBarang.text,
           "keterangan": keterangan.text,
+          "image": base64Image,
         },
       ).then((value) {
         //print message after insert to database
@@ -102,8 +176,9 @@ class _EditState extends State<Edit> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        title: Text("Creat New Note"),
+        title: Text("Edit Barang"),
         // ignore: prefer_const_literals_to_create_immutables
         actions: [
           Container(
@@ -115,7 +190,7 @@ class _EditState extends State<Edit> {
                     builder: (BuildContext context) {
                       //show dialog to confirm delete data
                       return AlertDialog(
-                        content: Text('Are you sure you want to delete this?'),
+                        content: Text('Anda yakin mau menghapus ini?'),
                         actions: <Widget>[
                           ElevatedButton(
                             child: Icon(Icons.cancel),
@@ -144,7 +219,6 @@ class _EditState extends State<Edit> {
               Text(
                 'Nama Barang',
                 style: TextStyle(
-                  color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -153,7 +227,7 @@ class _EditState extends State<Edit> {
               TextFormField(
                 controller: namaBarang,
                 decoration: InputDecoration(
-                    hintText: "Type Note Title",
+                    hintText: "Tulis Nama Barang",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15.0),
                     ),
@@ -165,7 +239,7 @@ class _EditState extends State<Edit> {
                 ),
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return 'Note Title is Required!';
+                    return 'Nama Barang Harus di Isi!';
                   }
                   return null;
                 },
@@ -174,7 +248,6 @@ class _EditState extends State<Edit> {
               Text(
                 'Jumlah Barang',
                 style: TextStyle(
-                  color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -183,7 +256,7 @@ class _EditState extends State<Edit> {
               TextFormField(
                 controller: jumlahBarang,
                 decoration: InputDecoration(
-                    hintText: "Type Note Title",
+                    hintText: "Tulis Jumlah Barang",
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15.0),
                     ),
@@ -195,16 +268,64 @@ class _EditState extends State<Edit> {
                 ),
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return 'Note Title is Required!';
+                    return 'Jumlah Barang Harus di Isi!';
                   }
                   return null;
                 },
               ),
               SizedBox(height: 20),
               Text(
+                'Foto Barang',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 20),
+              Center(
+                child: InkWell(
+                  onTap: () {
+                    _showSelectionDialog(context);
+                  },
+                  child: Container(
+                    padding: EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.grey.withOpacity(0.5),
+                          spreadRadius: 2,
+                          blurRadius: 10,
+                          offset: Offset(0, 3),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        _imageFile == null
+                            ? Icon(CupertinoIcons.photo)
+                            : Image.file(_imageFile!, height: 150, width: 350),
+                        SizedBox(height: 10),
+                        Visibility(
+                          visible: _imageFile == null,
+                          child: Text(
+                            'Upload foto',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              SizedBox(height: 20),
+              Text(
                 'Keterangan Barang',
                 style: TextStyle(
-                  color: Colors.white,
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
                 ),
@@ -216,7 +337,7 @@ class _EditState extends State<Edit> {
                 minLines: 5,
                 maxLines: null,
                 decoration: InputDecoration(
-                    hintText: 'Type Note Content',
+                    hintText: 'Tulis Keterangan Barang',
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(15.0),
                     ),
@@ -228,7 +349,7 @@ class _EditState extends State<Edit> {
                 ),
                 validator: (value) {
                   if (value!.isEmpty) {
-                    return 'Note Content is Required!';
+                    return 'Keterangan Barang Harus di Isi!';
                   }
                   return null;
                 },
@@ -236,14 +357,13 @@ class _EditState extends State<Edit> {
               SizedBox(height: 15),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.green,
                   fixedSize: Size.fromWidth(120),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(15),
                   ),
                 ),
                 child: Text(
-                  "Edit",
+                  "Update",
                   style: TextStyle(
                     color: Colors.white,
                     fontSize: 20,

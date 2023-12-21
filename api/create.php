@@ -30,7 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] == "POST") {
         $mime = $finfo->buffer($imageBlob);
 
         // Menentukan direktori untuk menyimpan gambar
-        $uploadDir = "path/to/upload/directory/";
+        $uploadDir = "images/";
 
         // Membuat direktori jika belum ada
         if (!file_exists($uploadDir)) {
